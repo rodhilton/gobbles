@@ -14,7 +14,7 @@ import java.util.Random;
 //TODO: getting 10 pellets moves to next world
 //TODO: final world has no end, just more and more pellets
 //TODO (later): special characters for things like teleporters, doors, etc.
-//TODO (later): special characters that paint different colors, but are not obstacles?
+//TODO (later): special characters that paint different colors, but are not obstacles?b
 
 public class GameState {
     private static final int SNAKE_START_LENGTH=10;
