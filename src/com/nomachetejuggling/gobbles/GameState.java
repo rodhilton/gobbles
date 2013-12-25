@@ -10,11 +10,12 @@ import java.util.Random;
 
 //TODO: dead pauses game, can restart
 //TODO: pause should blank the screen to avoid slowmo effect
-//TODO: visible counter for pellets (maybe a progress bar)
+//TODO: HUD: counter num
+//TODO: HUD: global point system (counts down as you move maybe, up big when you get food)
+//TODO: HUD: current level
 //TODO: load maps from text files
-//TODO: getting 10 pellets moves to next world
-//TODO: final world has no end, just more and more pellets
 //TODO: game modes:  EASY (infinite lives per level, lower speed), NORMAL (5 lives per level, normal speed), HARD (3 lifes total, slightly faster speed), INSANE (1 life total, same speed as hard)
+//TODO: high scores
 //TODO (later): special characters for things like teleporters, doors, etc.
 //TODO (later): special characters that paint different colors, but are not obstacles?
 //TODO (later): lets split some stuff apart at some point.  Move renderer out at least, it's not part of state
@@ -22,6 +23,9 @@ import java.util.Random;
 public class GameState {
     private static final int SNAKE_START_LENGTH=10;
     private static final int SNAKE_MULTIPLIER=7;
+    private static final int FOOD_GOAL = 10;
+
+    private int currentLevelIndex;
     private Level currentLevel;
 
     private int width;
@@ -48,21 +52,17 @@ public class GameState {
         this.dead = false;
         this.width = width;
         this.height = height;
-        this.snakeLength = SNAKE_START_LENGTH;
-        this.snake = new ArrayList<Coordinate>();
-        this.foodCount = 0;
         this.levels = levels;
+        this.currentLevelIndex = 0;
+        this.points = 0;
 
-        loadLevel(0);
-
-        Coordinate startPos = placeObject();
-        snake.add(startPos);
-        this.direction = Direction.NONE;
-        this.paused = true;
-        foodLocation = placeObject();
+        initLevel(currentLevelIndex);
     }
 
-    private void loadLevel(int index) {
+    private void initLevel(int index) {
+        this.snakeLength = SNAKE_START_LENGTH;
+        this.snake = new ArrayList<Coordinate>();
+
         this.validSquares = new ArrayList<Coordinate>();
         //Init valid squares.  Remove obstacles
         for(int i=0;i<width;i++) {
@@ -70,9 +70,17 @@ public class GameState {
                 validSquares.add(new Coordinate(i,j));
             }
         }
-        this.currentLevel = levels.get(0);
+        this.currentLevel = levels.get(index);
 
         this.validSquares.removeAll(currentLevel.getObstacles());
+
+        Coordinate startPos = placeObject();
+        snake.add(startPos);
+        this.direction = Direction.NONE;
+        this.paused = true;
+        foodLocation = placeObject();
+
+        this.foodCount = 0;
     }
 
     private Coordinate placeObject() {
@@ -131,8 +139,20 @@ public class GameState {
                 foodLocation = placeObject();
                 foodCount++;
                 snakeLength=(SNAKE_MULTIPLIER*foodCount)+SNAKE_START_LENGTH;
+                points = points + 10000;
                 System.out.println("Score: "+foodCount);
+                if(foodCount>=FOOD_GOAL && currentLevelIndex != levels.size()-1) {
+                    //If accomplished goal and not on last level (which goes on forever):
+                    this.paused = true;
+                    this.currentLevelIndex++;
+                    gameInput.clear();
+                    initLevel(currentLevelIndex);
+                }
+            } else {
+                this.points = Math.max(points - 10, 0);
             }
+
+            System.out.println("Points: "+points);
 
             while(snake.size()>snakeLength) {
                 snake.remove(0);

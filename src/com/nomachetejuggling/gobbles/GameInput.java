@@ -14,4 +14,8 @@ public class GameInput {
     public int getKey() {
         return key;
     }
+
+    public void clear() {
+        this.key = 0;
+    }
 }
