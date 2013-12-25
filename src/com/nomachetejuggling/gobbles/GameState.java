@@ -9,11 +9,14 @@ import java.util.List;
 import java.util.Random;
 
 //TODO: dead pauses game, can restart
+//TODO: lives per level
+//TODO: load maps from text files
+//TODO: random powerups that reverse snake if about to die (maybe they move)
+//TODO: powerup that auto pauses if about to die
 //TODO: pause should blank the screen to avoid slowmo effect
 //TODO: HUD: counter num
 //TODO: HUD: global point system (counts down as you move maybe, up big when you get food)
 //TODO: HUD: current level
-//TODO: load maps from text files
 //TODO: game modes:  EASY (infinite lives per level, lower speed), NORMAL (5 lives per level, normal speed), HARD (3 lifes total, slightly faster speed), INSANE (1 life total, same speed as hard)
 //TODO: high scores
 //TODO (later): special characters for things like teleporters, doors, etc.
@@ -204,6 +207,8 @@ public class GameState {
     }
 
     public BufferedImage render(int width, int height) {
+        final Color SNAKE_COLOR = new Color(192, 109, 209, 255);
+
         BufferedImage buff = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2 = (Graphics2D) buff.getGraphics();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -245,7 +250,7 @@ public class GameState {
 
         g2.setColor(Color.BLACK);
         g2.fillRect(offsetWidth, offsetHeight, scaleFactor*smallestSide, scaleFactor*smallestSide);
-        g2.setColor(Color.WHITE);
+        g2.setColor(SNAKE_COLOR);
 
         Coordinate head = snake.get(snake.size()-1);
         for(Coordinate snakeCoord: this.snake) {
@@ -266,7 +271,7 @@ public class GameState {
 
         if(paused) {
             g2.setColor(Color.WHITE);
-            g2.fillRect((head.getX()*scaleFactor)+offsetWidth, (head.getY()*scaleFactor)+offsetHeight, scaleFactor, scaleFactor);
+//            g2.fillRect((head.getX()*scaleFactor)+offsetWidth, (head.getY()*scaleFactor)+offsetHeight, scaleFactor, scaleFactor);
             g2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, (hudSize*2)/3));
             Rectangle2D bounds = g2.getFontMetrics().getStringBounds("Paused", g2);
             g2.drawString("Paused", (int)(offsetWidth+(smallestRealSide-bounds.getWidth())/2), (int)((hudSize-bounds.getHeight())/2+g2.getFontMetrics().getHeight()-g2.getFontMetrics().getDescent()));

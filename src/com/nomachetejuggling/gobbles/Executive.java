@@ -11,8 +11,7 @@ public class Executive {
         int height = 40;
         final List<Level> levels = new ArrayList<Level>();
 
-
-
+        levels.add(generateLevelWithObstacles(0, width, height));
         levels.add(generateLevelWithObstacles(5, width, height));
         levels.add(generateLevelWithObstacles(10, width, height));
         levels.add(generateLevelWithObstacles(20, width, height));
@@ -33,7 +32,7 @@ public class Executive {
                 while(true) {
                     try {
                         long currentMillis = System.currentTimeMillis();
-                        if(currentMillis - lastMillis > 50) {
+                        if(currentMillis - lastMillis > 100) {
                             state.tick(mainWindow.getGameInput());
                             lastMillis = currentMillis;
                             mainWindow.reRender();
