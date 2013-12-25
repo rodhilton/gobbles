@@ -24,13 +24,13 @@ public class MainWindow extends JFrame implements KeyListener {
         panel = new GamePanel(state);
 
         this.getContentPane().add(panel, BorderLayout.CENTER);
-        this.setSize(500, 500);
+        this.setSize(452, 522);
 
         this.setVisible(true);
         this.addKeyListener(this);
 
         gameInput = new GameInput();
-        gameInput.setKey(KeyEvent.VK_RIGHT); //Start position
+
     }
 
     public void reRender() {
