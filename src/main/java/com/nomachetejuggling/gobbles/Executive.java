@@ -1,9 +1,15 @@
 package com.nomachetejuggling.gobbles;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FilenameFilter;
+import org.apache.commons.io.IOUtils;
+import org.reflections.Reflections;
+import org.reflections.scanners.ResourcesScanner;
+import org.reflections.util.ClasspathHelper;
+import org.reflections.util.ConfigurationBuilder;
+
+
+import java.io.*;
 import java.util.*;
+import java.util.regex.Pattern;
 
 public class Executive {
 
@@ -12,31 +18,36 @@ public class Executive {
         int height = 40;
         final List<Level> levels = new ArrayList<Level>();
 
-        File mapDir = new File(args[0]);
+        Reflections reflections = new Reflections(new ConfigurationBuilder()
+                .setUrls(ClasspathHelper.forJavaClassPath())
+                .setScanners(new ResourcesScanner()));
 
-        if(!mapDir.exists() || !mapDir.isDirectory() || !mapDir.canRead()) {
-            throw new RuntimeException(args[0]+" is not a valid map dir");
+        Set<String> textFiles = reflections.getResources(Pattern.compile("\\d+_.*\\.txt"));
+
+        for (String file : textFiles){
+            System.out.println(file);
         }
 
-        File[] maps = mapDir.listFiles(new FilenameFilter() {
-            public boolean accept(File dir, String filename) {
-                return filename.endsWith(".txt");
-            }
-        });
+        List<String> maps = new ArrayList<String>(textFiles);
 
-        Arrays.sort(maps);
+        Collections.sort(maps);
+
+        System.out.println(maps);
 
         MapReader mapReader = new MapReader(width, height);
 
-        for(File map: maps) {
+        for(String map: maps) {
             try {
-                String text = new Scanner( map ).useDelimiter("\\Z").next();
-                Level level = mapReader.buildLevel(text);
+                InputStream myInputStream = Executive.class.getClassLoader().getResourceAsStream(map);
+                String myString = IOUtils.toString(myInputStream, "UTF-8");
+                Level level = mapReader.buildLevel(myString);
                 levels.add(level);
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             } catch (RuntimeException e) {
                 System.err.println("Map "+map+" not valid: "+e.getMessage());
+            } catch (IOException e) {
+                System.err.println("Map " + map + " not valid: " + e.getMessage());
             }
         }
 
@@ -55,7 +66,7 @@ public class Executive {
                 while(true) {
                     try {
                         long currentMillis = System.currentTimeMillis();
-                        if(currentMillis - lastMillis > 100) {
+                        if(currentMillis - lastMillis > 90) {
                             state.tick(mainWindow.getGameInput());
                             lastMillis = currentMillis;
                             mainWindow.reRender();

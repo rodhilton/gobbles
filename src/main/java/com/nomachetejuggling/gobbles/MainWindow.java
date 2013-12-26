@@ -8,11 +8,17 @@ import java.awt.image.BufferedImage;
 
 public class MainWindow extends JFrame implements KeyListener {
 
+    private HudPanel hudPanel;
     private GamePanel panel;
     private GameInput gameInput;
 
     public MainWindow(GameState state) {
         super("Gobbles");
+
+
+        Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
+        this.setSize(dim);
+
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         this.setTitle("Gobbles");
@@ -24,17 +30,23 @@ public class MainWindow extends JFrame implements KeyListener {
         panel = new GamePanel(state);
 
         this.getContentPane().add(panel, BorderLayout.CENTER);
+
+        hudPanel = new HudPanel(state);
+        hudPanel.setPreferredSize(new Dimension(40, 40));
+
+        this.getContentPane().add(hudPanel, BorderLayout.NORTH);
+
         this.setSize(452, 522);
 
         this.setVisible(true);
         this.addKeyListener(this);
 
         gameInput = new GameInput();
-
     }
 
     public void reRender() {
         panel.repaint();
+        hudPanel.repaint();
     }
 
     public GameInput getGameInput() {
@@ -72,7 +84,29 @@ class GamePanel extends JPanel {
         int width = this.getWidth();
         int height = this.getHeight();
 
-        BufferedImage buff = grid.render(width, height);
+        BufferedImage buff = grid.renderGame(width, height);
+
+        g.drawImage(buff, 0, 0, null);
+    }
+
+}
+
+class HudPanel extends JPanel {
+    private GameState grid;
+
+    public HudPanel(GameState grid) {
+        this.grid = grid;
+    }
+
+
+    @Override
+    public void paintComponent(Graphics g) {
+        super.paintComponent(g);
+
+        int width = this.getWidth();
+        int height = this.getHeight();
+
+        BufferedImage buff = grid.renderHud(width, height);
 
         g.drawImage(buff, 0, 0, null);
     }

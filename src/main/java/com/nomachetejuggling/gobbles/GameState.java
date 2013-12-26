@@ -8,23 +8,52 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-//TODO: load maps from text files
-//TODO: why do I have to hit enter twice when dying all the way?
-//TODO: random powerups that reverse snake if about to die (maybe they move)
-//TODO: powerup that auto pauses if about to die
-//TODO: pause should blank the screen to avoid slowmo effect
-//TODO: HUD: counter num
-//TODO: HUD: global point system (counts down as you move maybe, up big when you get food)
-//TODO: HUD: current level
-//TODO: after X points, powerups
-//TODO: random coins that are not food, but add points. they disappear after a bit.
-//TODO: points for risky behavior
-//TODO: iconic graphics
-//TODO: game modes:  EASY (infinite lives per level, lower speed), NORMAL (5 lives per level, normal speed), HARD (3 lifes total, slightly faster speed), INSANE (1 life total, same speed as hard)
-//TODO: high scores
-//TODO (later): special characters for things like teleporters, doors, etc.
-//TODO (later): special characters that paint different colors, but are not obstacles?
-//TODO (later): lets split some stuff apart at some point.  Move renderer out at least, it's not part of state
+//TODO: BUGS:
+//      * why do I have to hit enter twice when dying all the way?
+//      * Still some weirdness about input.  Two keys in quick succession, only registers later one.  Should they queue?  How would that work?
+
+//TODO: Map enhancements:
+//      * Full GUI editor for text files
+//      * Read text files from dir or classpath
+//      * Map selection argument or cheat key
+//      * Different sized maps, scaled automatically.
+//      * Switches/Doors
+//      * Teleporters
+
+//TODO: Powerup System:
+//      * Points in HUD
+//      * Random coins in game (not food, they disappear after a few cycles, maybe 50) earn points
+//      * X points puts a powerup on board, disappears after a few cycles, maybe moves around)
+//      * Powerups:
+//           extra life
+//           auto reverse if about to die
+//           auto pause if about to die
+//           auto turn if about to crash
+//           can walk through self (but not obstacles) once
+//           shorten snake
+
+//TODO: Graphical enhancements:
+//      * pause should blank the screen to avoid slowmo effect
+//      * better prompting ("press enter to continue" etc)
+//      * glyphs or icons for squares
+//      * game starts maximized
+//      * is it possible to improve frame rate?
+//      * statuses (paused, dead) appear centered on grid, not in HUD
+
+//TODO: HUD:
+//      * food eaten
+//      * current level
+
+//TODO: Later enhancements:
+//      * game modes:  EASY (infinite lives per level, lower speed), NORMAL (5 lives per level, normal speed), HARD (3 lifes total, slightly faster speed), INSANE (1 life total, same speed as hard)
+//      * high scores and initial keeping
+//      * web start for sam
+//      * port all of Dave's Nibbles 3D levels, might need to change grid size (square currently assumed)
+
+//TODO: Professionalism:
+//      * Panels repaint themselves, they register themselves as listeners on the state
+//      * code cleanup and splitting
+//      * everything except the rendering should theoretically be unit testable
 
 public class GameState {
     private static final int SNAKE_START_LENGTH=10;
@@ -35,27 +64,27 @@ public class GameState {
     private int currentLevelIndex;
     private Level currentLevel;
 
+    private ArrayList<Coordinate> snake;
+    private Direction direction;
+    private int snakeLength;
+
+    private int foodCount;
+    private Coordinate foodLocation;
+
     private int width;
     private int height;
+
     private boolean dead;
-    private int snakeLength;
-    ArrayList<Coordinate> snake;
     private boolean paused;
-    int points;
-    int lives;
 
-    private Direction direction;
-
-    private ArrayList<Coordinate> validSquares;
-    private Coordinate foodLocation;
-    private int foodCount;
-
-    private Random rng;
+    private int points;
+    private int lives;
 
     private List<Level> levels = new ArrayList<Level>();
+    private ArrayList<Coordinate> validSquares;
+    private Random rng;
 
     public GameState(int width, int height, List<Level> levels) {
-
         this.rng = new Random();
         this.width = width;
         this.height = height;
@@ -88,10 +117,10 @@ public class GameState {
         this.validSquares.removeAll(currentLevel.getObstacles());
 
         Coordinate startPos = placeObject();
-        snake.add(startPos);
+        this.snake.add(startPos);
         this.direction = Direction.NONE;
         this.paused = true;
-        foodLocation = placeObject();
+        this.foodLocation = placeObject();
 
         this.foodCount = 0;
     }
@@ -227,7 +256,33 @@ public class GameState {
         return false;
     }
 
-    public BufferedImage render(int width, int height) {
+    public BufferedImage renderHud(int width, int height) {
+        BufferedImage buff = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = (Graphics2D) buff.getGraphics();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        g2.setColor(Color.GRAY);
+        g2.fillRect(0, 0, width, height);
+
+        if(paused) {
+            g2.setColor(Color.WHITE);
+//            g2.fillRect((head.getX()*scaleFactor)+offsetWidth, (head.getY()*scaleFactor)+offsetHeight, scaleFactor, scaleFactor);
+            g2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, (height*2)/3));
+            Rectangle2D bounds = g2.getFontMetrics().getStringBounds("Paused", g2);
+            g2.drawString("Paused", (int)((width-bounds.getWidth())/2), (int)((height-bounds.getHeight())/2+g2.getFontMetrics().getHeight()-g2.getFontMetrics().getDescent()));
+        }
+
+        if(dead) {
+            g2.setColor(Color.RED);
+            g2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, height));
+            Rectangle2D bounds = g2.getFontMetrics().getStringBounds("Dead!", g2);
+            g2.drawString("Dead!", (int)((width-bounds.getWidth())/2), (int)((height-bounds.getHeight())/2+g2.getFontMetrics().getHeight()-g2.getFontMetrics().getDescent()));
+        }
+
+        return buff;
+    }
+
+    public BufferedImage renderGame(int width, int height) {
         final Color SNAKE_COLOR = new Color(192, 109, 209, 255);
 
         BufferedImage buff = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
@@ -238,13 +293,7 @@ public class GameState {
         g2.setColor(Color.DARK_GRAY);
         g2.fillRect(0, 0, width, height);
 
-        int hudSize = 40;
-        height = height - hudSize;
-
-        g2.setColor(Color.GRAY);
-        g2.fillRect(0,0,width,hudSize);
-
-        int offsetHeight = hudSize;
+        int offsetHeight = 0;
         int offsetWidth = 0;
         int scaleFactor;
         int smallestSide;
@@ -252,12 +301,12 @@ public class GameState {
 
         if(width > height) {
             scaleFactor = (int)(height/((double)this.height));
-            offsetWidth+= (width - height)/2;
+            offsetWidth += (width - height)/2;
             smallestSide = this.height;
             smallestRealSide = height;
         } else {
             scaleFactor = (int)(width/((double)this.width));
-            offsetHeight+= (height - width)/2;
+            offsetHeight += (height - width)/2;
             smallestSide = this.width;
             smallestRealSide = width;
         }
@@ -287,23 +336,18 @@ public class GameState {
                 g2.fillRect((obstacle.getX() * scaleFactor) + offsetWidth, (obstacle.getY() * scaleFactor) + offsetHeight, scaleFactor, scaleFactor);
         }
 
-        g2.setColor(new Color(255, 255-(((int)(128*(foodCount/(double)FOOD_GOAL)))), 0, 255));
+//        g2.setColor(new Color(255, 255-(((int)(128*(foodCount/(double)FOOD_GOAL)))), 0, 255)); //Gotta be careful here, at last level theres more than goal counts
+        g2.setColor(Color.YELLOW);
         g2.fillOval((foodLocation.getX()*scaleFactor)+offsetWidth, (foodLocation.getY()*scaleFactor)+offsetHeight, scaleFactor, scaleFactor);
 
         if(paused) {
             g2.setColor(Color.WHITE);
 //            g2.fillRect((head.getX()*scaleFactor)+offsetWidth, (head.getY()*scaleFactor)+offsetHeight, scaleFactor, scaleFactor);
-            g2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, (hudSize*2)/3));
-            Rectangle2D bounds = g2.getFontMetrics().getStringBounds("Paused", g2);
-            g2.drawString("Paused", (int)(offsetWidth+(smallestRealSide-bounds.getWidth())/2), (int)((hudSize-bounds.getHeight())/2+g2.getFontMetrics().getHeight()-g2.getFontMetrics().getDescent()));
         }
 
         if(dead) {
             g2.setColor(Color.RED);
             g2.fillRect((head.getX()*scaleFactor)+offsetWidth, (head.getY()*scaleFactor)+offsetHeight, scaleFactor, scaleFactor);
-            g2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, hudSize));
-            Rectangle2D bounds = g2.getFontMetrics().getStringBounds("Dead!", g2);
-            g2.drawString("Dead!", (int)(offsetWidth+(smallestRealSide-bounds.getWidth())/2), (int)((hudSize-bounds.getHeight())/2+g2.getFontMetrics().getHeight()-g2.getFontMetrics().getDescent()));
         }
 
         return buff;

@@ -1,0 +1,40 @@
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+X           XXXXXXXXXXXXBROKENXXX
+X                XXXXXXXXXXXXXXXXXXXXXXX
+X                     XXXXXXXXXXXXXXXXXX
+X                          XXXXXXXXXXXXX
+X                                XXXXXXX
+XXXXXXX                              XXX   
+       XXXXX                            
+            XXXXX                       
+                 XXXXX                  
+                      XXXXX             
+XXX                           XXXXXXXXXXXXX        
+
+XXXXXXX                                 
+       XXXXX                            
+            XXXXX                       
+                 XXXXX                  
+                      XXXXX             
+                           XXXXX        
+                                XXXXXXXX
+XXXXXXX                                 
+       XXXXX                            
+            XXXXX                       
+                 XXXXX                  
+                      XXXXX             
+                           XXXXX        
+                                XXXXXXXX
+XXXXXXX                                 
+       XXXXX                            
+            XXXXX                       
+                 XXXXX                  
+                      XXXXX             
+                           XXXXX        
+                                XXXXXXXX
+XXXXXXX                                X
+XXXXXXXXXXXX                           X
+XXXXXXXXXXXXXXXXX                      X
+XXXXXXXXXXXXXXXXXXXXXX                 X
+XXXXXXXXXXXXXXXXXXXXXXXXXXX            X
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
