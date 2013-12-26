@@ -8,15 +8,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-//TODO: dead pauses game, can restart
-//TODO: lives per level
 //TODO: load maps from text files
+//TODO: why do I have to hit enter twice when dying all the way?
 //TODO: random powerups that reverse snake if about to die (maybe they move)
 //TODO: powerup that auto pauses if about to die
 //TODO: pause should blank the screen to avoid slowmo effect
 //TODO: HUD: counter num
 //TODO: HUD: global point system (counts down as you move maybe, up big when you get food)
 //TODO: HUD: current level
+//TODO: after X points, powerups
+//TODO: random coins that are not food, but add points. they disappear after a bit.
+//TODO: points for risky behavior
+//TODO: iconic graphics
 //TODO: game modes:  EASY (infinite lives per level, lower speed), NORMAL (5 lives per level, normal speed), HARD (3 lifes total, slightly faster speed), INSANE (1 life total, same speed as hard)
 //TODO: high scores
 //TODO (later): special characters for things like teleporters, doors, etc.
@@ -26,7 +29,8 @@ import java.util.Random;
 public class GameState {
     private static final int SNAKE_START_LENGTH=10;
     private static final int SNAKE_MULTIPLIER=7;
-    private static final int FOOD_GOAL = 10;
+    private static final int FOOD_GOAL = 5;
+    private static final int DEFAULT_LIVES = 3;
 
     private int currentLevelIndex;
     private Level currentLevel;
@@ -38,6 +42,7 @@ public class GameState {
     ArrayList<Coordinate> snake;
     private boolean paused;
     int points;
+    int lives;
 
     private Direction direction;
 
@@ -52,14 +57,19 @@ public class GameState {
     public GameState(int width, int height, List<Level> levels) {
 
         this.rng = new Random();
-        this.dead = false;
         this.width = width;
         this.height = height;
         this.levels = levels;
+
+        initGame();
+        initLevel(currentLevelIndex);
+    }
+
+    private void initGame() {
         this.currentLevelIndex = 0;
         this.points = 0;
-
-        initLevel(currentLevelIndex);
+        this.lives = DEFAULT_LIVES;
+        this.dead = false;
     }
 
     private void initLevel(int index) {
@@ -152,13 +162,24 @@ public class GameState {
                     initLevel(currentLevelIndex);
                 }
             } else {
-                this.points = Math.max(points - 10, 0);
+//                this.points = Math.max(points - 10, 0);
             }
 
             System.out.println("Points: "+points);
 
             while(snake.size()>snakeLength) {
                 snake.remove(0);
+            }
+        } else if(dead) {
+            if(gameInput.getKey() == KeyEvent.VK_ENTER) {
+                gameInput.clear();
+                dead = false;
+                lives = lives - 1;
+                if(lives >= 0) {
+                    initLevel(currentLevelIndex);
+                } else {
+                    initGame();
+                }
             }
         } else {
             direction = getDirection(gameInput);
@@ -257,7 +278,7 @@ public class GameState {
             if(snakeCoord.equals(head)) {
                 g2.fillRoundRect((snakeCoord.getX()*scaleFactor)+offsetWidth, (snakeCoord.getY()*scaleFactor)+offsetHeight, scaleFactor, scaleFactor, scaleFactor/2, scaleFactor/2);
             } else {
-                g2.fillRect((snakeCoord.getX() * scaleFactor) + offsetWidth, (snakeCoord.getY() * scaleFactor) + offsetHeight, scaleFactor, scaleFactor);
+                g2.fillRoundRect((snakeCoord.getX() * scaleFactor) + offsetWidth, (snakeCoord.getY() * scaleFactor) + offsetHeight, scaleFactor, scaleFactor, scaleFactor/4, scaleFactor/4);
             }
         }
 
@@ -266,7 +287,7 @@ public class GameState {
                 g2.fillRect((obstacle.getX() * scaleFactor) + offsetWidth, (obstacle.getY() * scaleFactor) + offsetHeight, scaleFactor, scaleFactor);
         }
 
-        g2.setColor(Color.YELLOW);
+        g2.setColor(new Color(255, 255-(((int)(128*(foodCount/(double)FOOD_GOAL)))), 0, 255));
         g2.fillOval((foodLocation.getX()*scaleFactor)+offsetWidth, (foodLocation.getY()*scaleFactor)+offsetHeight, scaleFactor, scaleFactor);
 
         if(paused) {

@@ -1,8 +1,9 @@
 package com.nomachetejuggling.gobbles;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FilenameFilter;
+import java.util.*;
 
 public class Executive {
 
@@ -11,11 +12,33 @@ public class Executive {
         int height = 40;
         final List<Level> levels = new ArrayList<Level>();
 
-        levels.add(generateLevelWithObstacles(0, width, height));
-        levels.add(generateLevelWithObstacles(5, width, height));
-        levels.add(generateLevelWithObstacles(10, width, height));
-        levels.add(generateLevelWithObstacles(20, width, height));
-        levels.add(generateLevelWithObstacles(40, width, height));
+        File mapDir = new File(args[0]);
+
+        if(!mapDir.exists() || !mapDir.isDirectory() || !mapDir.canRead()) {
+            throw new RuntimeException(args[0]+" is not a valid map dir");
+        }
+
+        File[] maps = mapDir.listFiles(new FilenameFilter() {
+            public boolean accept(File dir, String filename) {
+                return filename.endsWith(".txt");
+            }
+        });
+
+        Arrays.sort(maps);
+
+        MapReader mapReader = new MapReader(width, height);
+
+        for(File map: maps) {
+            try {
+                String text = new Scanner( map ).useDelimiter("\\Z").next();
+                Level level = mapReader.buildLevel(text);
+                levels.add(level);
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (RuntimeException e) {
+                System.err.println("Map "+map+" not valid: "+e.getMessage());
+            }
+        }
 
         final GameState state = new GameState(width,height, levels);
 
@@ -47,7 +70,38 @@ public class Executive {
 
     }
 
-    private static Level generateLevelWithObstacles(int numObstacles, int width, int height) {
+}
+
+class MapReader {
+    private int width;
+    private int height;
+
+    public MapReader(int width, int height) {
+        this.width = width;
+        this.height = height;
+    }
+
+    public Level buildLevel(String mapContents) {
+        String[] lines = mapContents.split("\n");
+        if(lines.length != height) throw new RuntimeException("Number of lines != "+height);
+
+        List<Coordinate> obstacles = new ArrayList<Coordinate>();
+        for(int y=0;y<lines.length;y++) {
+            String line = lines[y];
+            char[] c = line.toCharArray();
+            if(c.length != width) throw new RuntimeException("Number of columns != "+width);
+            for(int x=0;x<c.length;x++) {
+                char theChar = c[x];
+                if(theChar!=' ') {
+                    obstacles.add(new Coordinate(x, y));
+                }
+            }
+        }
+
+        return new Level(obstacles);
+    }
+
+    private Level generateLevelWithObstacles(int numObstacles) {
         List<Coordinate> obstacles = new ArrayList<Coordinate>();
         Random rng = new Random();
         for(int i=0;i<numObstacles;i++) {
