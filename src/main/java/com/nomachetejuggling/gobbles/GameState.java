@@ -49,7 +49,6 @@ import java.util.Random;
 //TODO: Professionalism:
 //      * Store types, maybe an enum, for possible spaces.  Map to chars?  Need to flatten data structure, bunch of arrays isn't working. (random piece generation slow)
 //      * Optimizations - need to store entire grid indexable by location coord.  logic in Level class.
-//      * Panels repaint themselves, they register themselves as listeners on the state
 //      * code cleanup and splitting
 //      * everything except the rendering should theoretically be unit testable
 
@@ -65,6 +64,8 @@ public class GameState {
     private ArrayList<Coordinate> snake;
     private Direction direction;
     private int snakeLength;
+
+    ArrayList<Listener<GameState>> listeners;
 
     private int foodCount;
     private Coordinate foodLocation;
@@ -87,6 +88,7 @@ public class GameState {
         this.width = width;
         this.height = height;
         this.levels = levels;
+        this.listeners = new ArrayList<Listener<GameState>>();
 
         initGame();
     }
@@ -143,6 +145,13 @@ public class GameState {
     public void tick(GameInput gameInput) {
         boolean shouldContinue = handleInputAndContinue(gameInput);
         if (shouldContinue) updateState(gameInput);
+        updateListeners();
+    }
+
+    private void updateListeners() {
+        for(Listener<GameState> listener: listeners) {
+            listener.update();
+        }
     }
 
     private void updateState(GameInput gameInput) {
@@ -366,6 +375,11 @@ public class GameState {
         }
 
         return buff;
+    }
+
+
+    public void registerListener(Listener<GameState> listener) {
+        listeners.add(listener);
     }
 }
 

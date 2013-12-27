@@ -45,11 +45,6 @@ public class MainWindow extends JFrame implements KeyListener {
         gameInput = new GameInput();
     }
 
-    public void reRender() {
-        panel.repaint();
-        hudPanel.repaint();
-    }
-
     public GameInput getGameInput() {
         return gameInput;
     }
@@ -70,13 +65,13 @@ public class MainWindow extends JFrame implements KeyListener {
     }
 }
 
-class GamePanel extends JPanel {
+class GamePanel extends JPanel implements Listener<GameState> {
     private GameState grid;
 
     public GamePanel(GameState grid) {
         this.grid = grid;
+        grid.registerListener(this);
     }
-
 
     @Override
     public void paintComponent(Graphics g) {
@@ -90,13 +85,18 @@ class GamePanel extends JPanel {
         g.drawImage(buff, 0, 0, null);
     }
 
+    @Override
+    public void update() {
+        this.repaint();
+    }
 }
 
-class HudPanel extends JPanel {
+class HudPanel extends JPanel implements Listener<GameState> {
     private GameState grid;
 
     public HudPanel(GameState grid) {
         this.grid = grid;
+        grid.registerListener(this);
     }
 
 
@@ -110,6 +110,11 @@ class HudPanel extends JPanel {
         BufferedImage buff = grid.renderHud(width, height);
 
         g.drawImage(buff, 0, 0, null);
+    }
+
+    @Override
+    public void update() {
+        this.repaint();
     }
 
 }
