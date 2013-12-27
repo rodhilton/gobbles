@@ -9,16 +9,13 @@ import java.util.List;
 import java.util.Random;
 
 //TODO: BUGS:
-//      * why do I have to hit enter twice when dying and losing all lives?
-//      * Still some weirdness about input.  Two keys in quick succession, only registers later one.  Should they queue?  How would that work?
 
 //TODO: Map enhancements:
-//      * Full GUI editor for text files
-//      * Read text files from dir or classpath
-//      * Map selection argument or cheat key
 //      * Different sized maps, scaled automatically.
-//      * Switches/Doors
 //      * Teleporters
+//      * Switches/Doors
+//      * Full GUI editor for text files
+//      * Map selection argument or cheat key
 
 //TODO: Powerup System:
 //      * Points in HUD
@@ -33,10 +30,9 @@ import java.util.Random;
 //           shorten snake
 
 //TODO: Graphical enhancements:
-//      * pause should blank the screen to avoid slowmo effect
+//      * pause should blank the screen to avoid slowmo effect (but not on start)
 //      * better prompting ("press enter to continue" etc)
 //      * glyphs or icons for squares
-//      * game starts maximized
 //      * is it possible to improve frame rate?
 //      * statuses (paused, dead) appear centered on grid, not in HUD
 
@@ -51,6 +47,8 @@ import java.util.Random;
 //      * port all of Dave's Nibbles 3D levels, might need to change grid size (square currently assumed)
 
 //TODO: Professionalism:
+//      * Store types, maybe an enum, for possible spaces.  Map to chars?  Need to flatten data structure, bunch of arrays isn't working. (random piece generation slow)
+//      * Optimizations - need to store entire grid indexable by location coord.  logic in Level class.
 //      * Panels repaint themselves, they register themselves as listeners on the state
 //      * code cleanup and splitting
 //      * everything except the rendering should theoretically be unit testable
@@ -91,7 +89,6 @@ public class GameState {
         this.levels = levels;
 
         initGame();
-        initLevel(currentLevelIndex);
     }
 
     private void initGame() {
@@ -99,6 +96,7 @@ public class GameState {
         this.points = 0;
         this.lives = DEFAULT_LIVES;
         this.dead = false;
+        initLevel(currentLevelIndex);
     }
 
     private void initLevel(int index) {
@@ -143,16 +141,12 @@ public class GameState {
     }
 
     public void tick(GameInput gameInput) {
+        boolean shouldContinue = handleInputAndContinue(gameInput);
+        if (shouldContinue) updateState(gameInput);
+    }
+
+    private void updateState(GameInput gameInput) {
         if(!isPaused()) {
-            if(gameInput.getKey() == KeyEvent.VK_SPACE) {
-                paused = true;
-                return;
-            }
-
-            if(safeDirectionChange(gameInput)) {
-                direction = getDirection(gameInput);
-            }
-
             Coordinate head = snake.get(snake.size()-1);
 
             switch( direction ) {
@@ -194,14 +188,27 @@ public class GameState {
 //                this.points = Math.max(points - 10, 0);
             }
 
-            System.out.println("Points: "+points);
-
             while(snake.size()>snakeLength) {
                 snake.remove(0);
             }
+        }
+    }
+
+    private boolean handleInputAndContinue(GameInput gameInput) {
+        //Handle Input
+        int inputKey = gameInput.dequeueKey();
+        if(!isPaused()) {
+            if (inputKey == KeyEvent.VK_SPACE) {
+                paused = true;
+                return false;
+            }
+
+            if(safeDirectionChange(inputKey)) {
+                direction = getDirection(inputKey);
+            }
+            return true;
         } else if(dead) {
-            if(gameInput.getKey() == KeyEvent.VK_ENTER) {
-                gameInput.clear();
+            if(inputKey == KeyEvent.VK_ENTER) {
                 dead = false;
                 lives = lives - 1;
                 if(lives >= 0) {
@@ -209,29 +216,31 @@ public class GameState {
                 } else {
                     initGame();
                 }
+                return false;
             }
-        } else {
-            direction = getDirection(gameInput);
-            if(direction!= Direction.NONE) paused = false;
+        } else { //Resuming
+            direction = getDirection(inputKey);
+            if(direction != Direction.NONE) paused = false;
+            return false;
         }
-
+        return true;
     }
 
-    private Direction getDirection(GameInput gameInput) {
-        switch(gameInput.getKey()) {
+    private Direction getDirection(int key) {
+        switch(key) {
             case KeyEvent.VK_UP: return Direction.UP;
             case KeyEvent.VK_DOWN: return Direction.DOWN;
             case KeyEvent.VK_RIGHT: return Direction.RIGHT;
             case KeyEvent.VK_LEFT: return Direction.LEFT;
         }
-        return Direction.NONE;
+        return direction; //no change
     }
 
-    private boolean safeDirectionChange(GameInput gameInput) {
-        if(direction==Direction.DOWN && gameInput.getKey()==KeyEvent.VK_UP) return false;
-        if(direction==Direction.UP && gameInput.getKey()==KeyEvent.VK_DOWN) return false;
-        if(direction==Direction.RIGHT && gameInput.getKey()==KeyEvent.VK_LEFT) return false;
-        if(direction==Direction.LEFT && gameInput.getKey()==KeyEvent.VK_RIGHT) return false;
+    private boolean safeDirectionChange(int key) {
+        if(direction==Direction.DOWN && key==KeyEvent.VK_UP) return false;
+        if(direction==Direction.UP && key==KeyEvent.VK_DOWN) return false;
+        if(direction==Direction.RIGHT && key==KeyEvent.VK_LEFT) return false;
+        if(direction==Direction.LEFT && key==KeyEvent.VK_RIGHT) return false;
 
         return true;
     }
@@ -274,9 +283,15 @@ public class GameState {
 
         if(dead) {
             g2.setColor(Color.RED);
-            g2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, height));
-            Rectangle2D bounds = g2.getFontMetrics().getStringBounds("Dead!", g2);
-            g2.drawString("Dead!", (int)((width-bounds.getWidth())/2), (int)((height-bounds.getHeight())/2+g2.getFontMetrics().getHeight()-g2.getFontMetrics().getDescent()));
+            if(lives > 0) {
+                g2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, height));
+                Rectangle2D bounds = g2.getFontMetrics().getStringBounds("Dead!", g2);
+                g2.drawString("Dead!", (int)((width-bounds.getWidth())/2), (int)((height-bounds.getHeight())/2+g2.getFontMetrics().getHeight()-g2.getFontMetrics().getDescent()));
+            } else {
+                g2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, height));
+                Rectangle2D bounds = g2.getFontMetrics().getStringBounds("Game Over", g2);
+                g2.drawString("Game Over", (int)((width-bounds.getWidth())/2), (int)((height-bounds.getHeight())/2+g2.getFontMetrics().getHeight()-g2.getFontMetrics().getDescent()));
+            }
         }
 
         return buff;

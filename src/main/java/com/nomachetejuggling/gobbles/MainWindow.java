@@ -40,6 +40,7 @@ public class MainWindow extends JFrame implements KeyListener {
 
         this.setVisible(true);
         this.addKeyListener(this);
+        setExtendedState(java.awt.Frame.MAXIMIZED_BOTH);
 
         gameInput = new GameInput();
     }
@@ -60,7 +61,7 @@ public class MainWindow extends JFrame implements KeyListener {
 
     @Override
     public void keyPressed(KeyEvent keyEvent) {
-        gameInput.setKey(keyEvent.getKeyCode());
+        gameInput.queueKey(keyEvent.getKeyCode());
     }
 
     @Override

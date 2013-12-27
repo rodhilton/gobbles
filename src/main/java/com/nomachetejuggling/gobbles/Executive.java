@@ -66,7 +66,7 @@ public class Executive {
                 while(true) {
                     try {
                         long currentMillis = System.currentTimeMillis();
-                        if(currentMillis - lastMillis > 90) {
+                        if(currentMillis - lastMillis > 70) {
                             state.tick(mainWindow.getGameInput());
                             lastMillis = currentMillis;
                             mainWindow.reRender();
