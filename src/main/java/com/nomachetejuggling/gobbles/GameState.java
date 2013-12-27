@@ -11,7 +11,6 @@ import java.util.Random;
 //TODO: BUGS:
 
 //TODO: Map enhancements:
-//      * Different sized maps, scaled automatically.
 //      * Teleporters
 //      * Switches/Doors
 //      * Full GUI editor for text files
@@ -44,13 +43,14 @@ import java.util.Random;
 //      * game modes:  EASY (infinite lives per level, lower speed), NORMAL (5 lives per level, normal speed), HARD (3 lifes total, slightly faster speed), INSANE (1 life total, same speed as hard)
 //      * high scores and initial keeping
 //      * web start for sam
-//      * port all of Dave's Nibbles 3D levels, might need to change grid size (square currently assumed)
+//      * port all of Dave's Nibbles levels
 
 //TODO: Professionalism:
 //      * Store types, maybe an enum, for possible spaces.  Map to chars?  Need to flatten data structure, bunch of arrays isn't working. (random piece generation slow)
 //      * Optimizations - need to store entire grid indexable by location coord.  logic in Level class.
-//      * code cleanup and splitting
 //      * everything except the rendering should theoretically be unit testable
+//      * rendering in separate class
+
 
 public class GameState {
     private static final int SNAKE_START_LENGTH=10;
@@ -65,28 +65,23 @@ public class GameState {
     private Direction direction;
     private int snakeLength;
 
-    ArrayList<Listener<GameState>> listeners;
-
     private int foodCount;
+
     private Coordinate foodLocation;
-
-    private int width;
-    private int height;
-
     private boolean dead;
+
     private boolean paused;
-
     private int points;
-    private int lives;
 
+    private int lives;
     private List<Level> levels = new ArrayList<Level>();
+
     private ArrayList<Coordinate> validSquares;
     private Random rng;
+    ArrayList<Listener<GameState>> listeners;
 
-    public GameState(int width, int height, List<Level> levels) {
+    public GameState(List<Level> levels) {
         this.rng = new Random();
-        this.width = width;
-        this.height = height;
         this.levels = levels;
         this.listeners = new ArrayList<Listener<GameState>>();
 
@@ -102,17 +97,19 @@ public class GameState {
     }
 
     private void initLevel(int index) {
+        this.currentLevel = levels.get(index);
+
         this.snakeLength = SNAKE_START_LENGTH;
         this.snake = new ArrayList<Coordinate>();
 
+
         this.validSquares = new ArrayList<Coordinate>();
         //Init valid squares.  Remove obstacles
-        for(int i=0;i<width;i++) {
-            for(int j=0;j<height;j++) {
+        for(int i=0;i<currentLevel.getWidth();i++) {
+            for(int j=0;j<currentLevel.getHeight();j++) {
                 validSquares.add(new Coordinate(i,j));
             }
         }
-        this.currentLevel = levels.get(index);
 
         this.validSquares.removeAll(currentLevel.getObstacles());
 
@@ -133,13 +130,13 @@ public class GameState {
     }
 
     private int scaleX(int x) {
-        if(x < 0) return width + x;
-        else return x % width;
+        if(x < 0) return currentLevel.getWidth() + x;
+        else return x % currentLevel.getWidth();
     }
 
     private int scaleY(int y) {
-        if(y < 0) return height + y;
-        else return y % height;
+        if(y < 0) return currentLevel.getHeight() + y;
+        else return y % currentLevel.getHeight();
     }
 
     public void tick(GameInput gameInput) {
@@ -284,7 +281,6 @@ public class GameState {
 
         if(paused) {
             g2.setColor(Color.WHITE);
-//            g2.fillRect((head.getX()*scaleFactor)+offsetWidth, (head.getY()*scaleFactor)+offsetHeight, scaleFactor, scaleFactor);
             g2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, (height*2)/3));
             Rectangle2D bounds = g2.getFontMetrics().getStringBounds("Paused", g2);
             g2.drawString("Paused", (int)((width-bounds.getWidth())/2), (int)((height-bounds.getHeight())/2+g2.getFontMetrics().getHeight()-g2.getFontMetrics().getDescent()));
@@ -313,37 +309,28 @@ public class GameState {
         Graphics2D g2 = (Graphics2D) buff.getGraphics();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
+        //TODO: maybe these offsets should be calculated, then call a renderView or something that makes an image that is
+        //painted offset just one time, so all other calls can ignore the offset.
         //Background
         g2.setColor(Color.DARK_GRAY);
         g2.fillRect(0, 0, width, height);
 
-        int offsetHeight = 0;
-        int offsetWidth = 0;
         int scaleFactor;
-        int smallestSide;
-        int smallestRealSide;
 
-        if(width > height) {
-            scaleFactor = (int)(height/((double)this.height));
-            offsetWidth += (width - height)/2;
-            smallestSide = this.height;
-            smallestRealSide = height;
+        if(width/this.currentLevel.getWidth() > height/this.currentLevel.getHeight()) {
+            scaleFactor = (int)(height/((double)this.currentLevel.getHeight()));
         } else {
-            scaleFactor = (int)(width/((double)this.width));
-            offsetHeight += (height - width)/2;
-            smallestSide = this.width;
-            smallestRealSide = width;
+            scaleFactor = (int)(width/((double)this.currentLevel.getWidth()));
         }
 
-        //int gameSize = smallestSide*scaleFactor;
-        //Add in offsets for the imperfectness of the the board size, which must be a multiple of the game grid size
-        int fudgeFactor = (smallestRealSide - (smallestSide*scaleFactor)) / 2;
+        int realWidth = scaleFactor * this.currentLevel.getWidth();
+        int realHeight = scaleFactor * this.currentLevel.getHeight();
 
-        offsetHeight = offsetHeight + fudgeFactor;
-        offsetWidth = offsetWidth + fudgeFactor;
+        int offsetWidth = (width - realWidth)/2;
+        int offsetHeight = (height - realHeight)/2;
 
         g2.setColor(Color.BLACK);
-        g2.fillRect(offsetWidth, offsetHeight, scaleFactor*smallestSide, scaleFactor*smallestSide);
+        g2.fillRect(offsetWidth, offsetHeight, scaleFactor*this.currentLevel.getWidth(), scaleFactor*this.currentLevel.getHeight());
         g2.setColor(SNAKE_COLOR);
 
         Coordinate head = snake.get(snake.size()-1);
@@ -363,11 +350,6 @@ public class GameState {
 //        g2.setColor(new Color(255, 255-(((int)(128*(foodCount/(double)FOOD_GOAL)))), 0, 255)); //Gotta be careful here, at last level theres more than goal counts
         g2.setColor(Color.YELLOW);
         g2.fillOval((foodLocation.getX()*scaleFactor)+offsetWidth, (foodLocation.getY()*scaleFactor)+offsetHeight, scaleFactor, scaleFactor);
-
-        if(paused) {
-            g2.setColor(Color.WHITE);
-//            g2.fillRect((head.getX()*scaleFactor)+offsetWidth, (head.getY()*scaleFactor)+offsetHeight, scaleFactor, scaleFactor);
-        }
 
         if(dead) {
             g2.setColor(Color.RED);
@@ -426,13 +408,25 @@ enum Direction {
 }
 
 class Level {
+    private int width;
+    private int height;
     private List<Coordinate> obstacles;
 
-    public Level(List<Coordinate> obstacles) {
+    public Level(int width, int height, List<Coordinate> obstacles) {
+        this.width = width;
+        this.height = height;
         this.obstacles = obstacles;
     }
 
     public List<Coordinate> getObstacles() {
         return obstacles;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
     }
 }

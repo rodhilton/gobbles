@@ -14,8 +14,6 @@ import java.util.regex.Pattern;
 public class Executive {
 
     public static void main(String[] args) {
-        int width = 40;
-        int height = 40;
         final List<Level> levels = new ArrayList<Level>();
 
         Reflections reflections = new Reflections(new ConfigurationBuilder()
@@ -34,7 +32,7 @@ public class Executive {
 
         System.out.println(maps);
 
-        MapReader mapReader = new MapReader(width, height);
+        MapReader mapReader = new MapReader();
 
         for(String map: maps) {
             try {
@@ -51,7 +49,7 @@ public class Executive {
             }
         }
 
-        final GameState state = new GameState(width,height, levels);
+        final GameState state = new GameState(levels);
 
         final MainWindow mainWindow = new MainWindow(state);
 
@@ -83,23 +81,20 @@ public class Executive {
 }
 
 class MapReader {
-    private int width;
-    private int height;
 
-    public MapReader(int width, int height) {
-        this.width = width;
-        this.height = height;
+    public MapReader() {
     }
 
     public Level buildLevel(String mapContents) {
         String[] lines = mapContents.split("\n");
-        if(lines.length != height) throw new RuntimeException("Number of lines != "+height);
+        int height = lines.length;
+        int width = 0;
 
         List<Coordinate> obstacles = new ArrayList<Coordinate>();
         for(int y=0;y<lines.length;y++) {
             String line = lines[y];
             char[] c = line.toCharArray();
-            if(c.length != width) throw new RuntimeException("Number of columns != "+width);
+            if(c.length > width) width = c.length;
             for(int x=0;x<c.length;x++) {
                 char theChar = c[x];
                 if(theChar!=' ') {
@@ -108,16 +103,6 @@ class MapReader {
             }
         }
 
-        return new Level(obstacles);
-    }
-
-    private Level generateLevelWithObstacles(int numObstacles) {
-        List<Coordinate> obstacles = new ArrayList<Coordinate>();
-        Random rng = new Random();
-        for(int i=0;i<numObstacles;i++) {
-            obstacles.add(new Coordinate(rng.nextInt(width), rng.nextInt(height)));
-        }
-        Level level = new Level(obstacles);
-        return level;
+        return new Level(width, height, obstacles);
     }
 }
