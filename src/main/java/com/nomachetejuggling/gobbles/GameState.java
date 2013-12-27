@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Random;
 
 //TODO: BUGS:
-//      * why do I have to hit enter twice when dying all the way?
+//      * why do I have to hit enter twice when dying and losing all lives?
 //      * Still some weirdness about input.  Two keys in quick succession, only registers later one.  Should they queue?  How would that work?
 
 //TODO: Map enhancements:
