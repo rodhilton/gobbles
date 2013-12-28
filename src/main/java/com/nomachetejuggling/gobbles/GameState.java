@@ -4,14 +4,14 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
-import java.util.Random;
 
 //TODO: BUGS:
+//      * weirdness with teleporters.  On current 0_basic test map, going into cyan from right side, the collision is in the wrong place (outside the box)
+//      * teleporter handling is weird.  removing the head of the snake and making a new one?  seems too late, like an ordering issue
 
 //TODO: Map enhancements:
-//      * Teleporters
 //      * Switches/Doors
 //      * Full GUI editor for text files
 //      * Map selection argument or cheat key
@@ -53,9 +53,9 @@ import java.util.Random;
 
 
 public class GameState {
-    private static final int SNAKE_START_LENGTH=10;
-    private static final int SNAKE_MULTIPLIER=7;
-    private static final int FOOD_GOAL = 5;
+    private static final int SNAKE_START_LENGTH = 10;
+    private static final int SNAKE_MULTIPLIER = 7;
+    private static final int FOOD_GOAL = 10;
     private static final int DEFAULT_LIVES = 3;
 
     private int currentLevelIndex;
@@ -105,13 +105,13 @@ public class GameState {
 
         this.validSquares = new ArrayList<Coordinate>();
         //Init valid squares.  Remove obstacles
-        for(int i=0;i<currentLevel.getWidth();i++) {
-            for(int j=0;j<currentLevel.getHeight();j++) {
-                validSquares.add(new Coordinate(i,j));
+        for (int i = 0; i < currentLevel.getWidth(); i++) {
+            for (int j = 0; j < currentLevel.getHeight(); j++) {
+                validSquares.add(new Coordinate(i, j));
             }
         }
 
-        this.validSquares.removeAll(currentLevel.getObstacles());
+        this.validSquares.removeAll(currentLevel.getObstructionCoordinates());
 
         Coordinate startPos = placeObject();
         this.snake.add(startPos);
@@ -130,12 +130,12 @@ public class GameState {
     }
 
     private int scaleX(int x) {
-        if(x < 0) return currentLevel.getWidth() + x;
+        if (x < 0) return currentLevel.getWidth() + x;
         else return x % currentLevel.getWidth();
     }
 
     private int scaleY(int y) {
-        if(y < 0) return currentLevel.getHeight() + y;
+        if (y < 0) return currentLevel.getHeight() + y;
         else return y % currentLevel.getHeight();
     }
 
@@ -146,29 +146,16 @@ public class GameState {
     }
 
     private void updateListeners() {
-        for(Listener<GameState> listener: listeners) {
+        for (Listener<GameState> listener : listeners) {
             listener.update();
         }
     }
 
     private void updateState(GameInput gameInput) {
-        if(!isPaused()) {
-            Coordinate head = snake.get(snake.size()-1);
+        if (!isPaused()) {
+            Coordinate head = snake.get(snake.size() - 1);
 
-            switch( direction ) {
-                case UP:
-                    snake.add(new Coordinate(head.getX(), scaleY(head.getY() - 1)));
-                    break;
-                case DOWN:
-                    snake.add(new Coordinate(head.getX(), scaleY(head.getY()+1)));
-                    break;
-                case LEFT:
-                    snake.add(new Coordinate(scaleX(head.getX()-1), head.getY()));
-                    break;
-                case RIGHT :
-                    snake.add(new Coordinate(scaleX(head.getX()+1), head.getY()));
-                    break;
-            }
+            moveSnakeRelativeTo(head);
 
             //check for collisions with snake, world, or tokens
             boolean hasCollided = hasCollided();
@@ -177,13 +164,34 @@ public class GameState {
                 dead = true;
             }
 
-            if(head.equals(foodLocation)) {
+            GameElement collidingElement = currentLevel.getElementAt(head);
+
+            if(collidingElement != null) {
+
+                switch(collidingElement.getType()) {
+                    case WALL:
+                        dead = true;
+                        break;
+                    case TELEPORTER:
+                        List<Coordinate> teleporters = currentLevel.getMatchingElements(collidingElement);
+                        snake.remove(snake.size()-1);
+                        teleporters.remove(head);
+                        Coordinate teleportLocation = teleporters.get(rng.nextInt(teleporters.size()));
+                        moveSnakeRelativeTo(teleportLocation);
+                        //Need to recheck for collisions here.  Code smell.
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            if (head.equals(foodLocation)) {
                 foodLocation = placeObject();
                 foodCount++;
-                snakeLength=(SNAKE_MULTIPLIER*foodCount)+SNAKE_START_LENGTH;
+                snakeLength = (SNAKE_MULTIPLIER * foodCount) + SNAKE_START_LENGTH;
                 points = points + 10000;
-                System.out.println("Score: "+foodCount);
-                if(foodCount>=FOOD_GOAL && currentLevelIndex != levels.size()-1) {
+                System.out.println("Score: " + foodCount);
+                if (foodCount >= FOOD_GOAL && currentLevelIndex != levels.size() - 1) {
                     //If accomplished goal and not on last level (which goes on forever):
                     this.paused = true;
                     this.currentLevelIndex++;
@@ -194,30 +202,48 @@ public class GameState {
 //                this.points = Math.max(points - 10, 0);
             }
 
-            while(snake.size()>snakeLength) {
+            while (snake.size() > snakeLength) {
                 snake.remove(0);
             }
+        }
+    }
+
+    private void moveSnakeRelativeTo(Coordinate head) {
+        switch (direction) {
+            case UP:
+                snake.add(new Coordinate(head.getX(), scaleY(head.getY() - 1)));
+                break;
+            case DOWN:
+                snake.add(new Coordinate(head.getX(), scaleY(head.getY() + 1)));
+                break;
+            case LEFT:
+                snake.add(new Coordinate(scaleX(head.getX() - 1), head.getY()));
+                break;
+            case RIGHT:
+                snake.add(new Coordinate(scaleX(head.getX() + 1), head.getY()));
+                break;
         }
     }
 
     private boolean handleInputAndContinue(GameInput gameInput) {
         //Handle Input
         int inputKey = gameInput.dequeueKey();
-        if(!isPaused()) {
+        if (!isPaused()) {
             if (inputKey == KeyEvent.VK_SPACE) {
                 paused = true;
+                direction = Direction.NONE;
                 return false;
             }
 
-            if(safeDirectionChange(inputKey)) {
+            if (safeDirectionChange(inputKey)) {
                 direction = getDirection(inputKey);
             }
             return true;
-        } else if(dead) {
-            if(inputKey == KeyEvent.VK_ENTER) {
+        } else if (dead) {
+            if (inputKey == KeyEvent.VK_ENTER) {
                 dead = false;
                 lives = lives - 1;
-                if(lives >= 0) {
+                if (lives >= 0) {
                     initLevel(currentLevelIndex);
                 } else {
                     initGame();
@@ -226,27 +252,33 @@ public class GameState {
             }
         } else { //Resuming
             direction = getDirection(inputKey);
-            if(direction != Direction.NONE) paused = false;
+            if (direction != Direction.NONE) paused = false;
             return false;
         }
         return true;
     }
 
     private Direction getDirection(int key) {
-        switch(key) {
-            case KeyEvent.VK_UP: return Direction.UP;
-            case KeyEvent.VK_DOWN: return Direction.DOWN;
-            case KeyEvent.VK_RIGHT: return Direction.RIGHT;
-            case KeyEvent.VK_LEFT: return Direction.LEFT;
+        switch (key) {
+            case KeyEvent.VK_UP:
+                return Direction.UP;
+            case KeyEvent.VK_DOWN:
+                return Direction.DOWN;
+            case KeyEvent.VK_RIGHT:
+                return Direction.RIGHT;
+            case KeyEvent.VK_LEFT:
+                return Direction.LEFT;
         }
         return direction; //no change
     }
 
     private boolean safeDirectionChange(int key) {
-        if(direction==Direction.DOWN && key==KeyEvent.VK_UP) return false;
-        if(direction==Direction.UP && key==KeyEvent.VK_DOWN) return false;
-        if(direction==Direction.RIGHT && key==KeyEvent.VK_LEFT) return false;
-        if(direction==Direction.LEFT && key==KeyEvent.VK_RIGHT) return false;
+        if (direction == Direction.DOWN && key == KeyEvent.VK_UP) return false;
+        if (direction == Direction.UP && key == KeyEvent.VK_DOWN) return false;
+        if (direction == Direction.RIGHT && key == KeyEvent.VK_LEFT)
+            return false;
+        if (direction == Direction.LEFT && key == KeyEvent.VK_RIGHT)
+            return false;
 
         return true;
     }
@@ -256,19 +288,13 @@ public class GameState {
     }
 
     private boolean hasCollided() {
-        Coordinate head = snake.get(snake.size()-1);
+        Coordinate head = snake.get(snake.size() - 1);
 
-        for(int i=0;i<snake.size()-1;i++) { //All except the head
-            if(snake.get(i).equals(head)) return true;
+        for (int i = 0; i < snake.size() - 1; i++) { //All except the head
+            if (snake.get(i).equals(head)) return true;
         }
 
-        for(int i=0;i<currentLevel.getObstacles().size();i++) { //All except the head
-            if(currentLevel.getObstacles().get(i).equals(head)) {
-                return true;
-            }
-        }
-
-        return false;
+       return false;
     }
 
     public BufferedImage renderHud(int width, int height) {
@@ -279,23 +305,23 @@ public class GameState {
         g2.setColor(Color.GRAY);
         g2.fillRect(0, 0, width, height);
 
-        if(paused) {
+        if (paused) {
             g2.setColor(Color.WHITE);
-            g2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, (height*2)/3));
+            g2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, (height * 2) / 3));
             Rectangle2D bounds = g2.getFontMetrics().getStringBounds("Paused", g2);
-            g2.drawString("Paused", (int)((width-bounds.getWidth())/2), (int)((height-bounds.getHeight())/2+g2.getFontMetrics().getHeight()-g2.getFontMetrics().getDescent()));
+            g2.drawString("Paused", (int) ((width - bounds.getWidth()) / 2), (int) ((height - bounds.getHeight()) / 2 + g2.getFontMetrics().getHeight() - g2.getFontMetrics().getDescent()));
         }
 
-        if(dead) {
+        if (dead) {
             g2.setColor(Color.RED);
-            if(lives > 0) {
+            if (lives > 0) {
                 g2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, height));
                 Rectangle2D bounds = g2.getFontMetrics().getStringBounds("Dead!", g2);
-                g2.drawString("Dead!", (int)((width-bounds.getWidth())/2), (int)((height-bounds.getHeight())/2+g2.getFontMetrics().getHeight()-g2.getFontMetrics().getDescent()));
+                g2.drawString("Dead!", (int) ((width - bounds.getWidth()) / 2), (int) ((height - bounds.getHeight()) / 2 + g2.getFontMetrics().getHeight() - g2.getFontMetrics().getDescent()));
             } else {
                 g2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, height));
                 Rectangle2D bounds = g2.getFontMetrics().getStringBounds("Game Over", g2);
-                g2.drawString("Game Over", (int)((width-bounds.getWidth())/2), (int)((height-bounds.getHeight())/2+g2.getFontMetrics().getHeight()-g2.getFontMetrics().getDescent()));
+                g2.drawString("Game Over", (int) ((width - bounds.getWidth()) / 2), (int) ((height - bounds.getHeight()) / 2 + g2.getFontMetrics().getHeight() - g2.getFontMetrics().getDescent()));
             }
         }
 
@@ -303,7 +329,7 @@ public class GameState {
     }
 
     public BufferedImage renderGame(int width, int height) {
-        final Color SNAKE_COLOR = new Color(192, 109, 209, 255);
+        final Color SNAKE_COLOR = Color.WHITE;
 
         BufferedImage buff = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2 = (Graphics2D) buff.getGraphics();
@@ -317,43 +343,56 @@ public class GameState {
 
         int scaleFactor;
 
-        if(width/this.currentLevel.getWidth() > height/this.currentLevel.getHeight()) {
-            scaleFactor = (int)(height/((double)this.currentLevel.getHeight()));
+        if (width / this.currentLevel.getWidth() > height / this.currentLevel.getHeight()) {
+            scaleFactor = (int) (height / ((double) this.currentLevel.getHeight()));
         } else {
-            scaleFactor = (int)(width/((double)this.currentLevel.getWidth()));
+            scaleFactor = (int) (width / ((double) this.currentLevel.getWidth()));
         }
 
         int realWidth = scaleFactor * this.currentLevel.getWidth();
         int realHeight = scaleFactor * this.currentLevel.getHeight();
 
-        int offsetWidth = (width - realWidth)/2;
-        int offsetHeight = (height - realHeight)/2;
+        int offsetWidth = (width - realWidth) / 2;
+        int offsetHeight = (height - realHeight) / 2;
 
         g2.setColor(Color.BLACK);
-        g2.fillRect(offsetWidth, offsetHeight, scaleFactor*this.currentLevel.getWidth(), scaleFactor*this.currentLevel.getHeight());
+        g2.fillRect(offsetWidth, offsetHeight, scaleFactor * this.currentLevel.getWidth(), scaleFactor * this.currentLevel.getHeight());
         g2.setColor(SNAKE_COLOR);
 
-        Coordinate head = snake.get(snake.size()-1);
-        for(Coordinate snakeCoord: this.snake) {
-            if(snakeCoord.equals(head)) {
-                g2.fillRoundRect((snakeCoord.getX()*scaleFactor)+offsetWidth, (snakeCoord.getY()*scaleFactor)+offsetHeight, scaleFactor, scaleFactor, scaleFactor/2, scaleFactor/2);
+        Coordinate head = snake.get(snake.size() - 1);
+        for (Coordinate snakeCoord : this.snake) {
+            if (snakeCoord.equals(head)) {
+                g2.fillRoundRect((snakeCoord.getX() * scaleFactor) + offsetWidth, (snakeCoord.getY() * scaleFactor) + offsetHeight, scaleFactor, scaleFactor, scaleFactor / 2, scaleFactor / 2);
             } else {
-                g2.fillRoundRect((snakeCoord.getX() * scaleFactor) + offsetWidth, (snakeCoord.getY() * scaleFactor) + offsetHeight, scaleFactor, scaleFactor, scaleFactor/4, scaleFactor/4);
+                g2.fillRoundRect((snakeCoord.getX() * scaleFactor) + offsetWidth, (snakeCoord.getY() * scaleFactor) + offsetHeight, scaleFactor, scaleFactor, scaleFactor / 4, scaleFactor / 4);
             }
         }
 
-        g2.setColor(Color.BLUE);
-        for(Coordinate obstacle: this.currentLevel.getObstacles()) {
-                g2.fillRect((obstacle.getX() * scaleFactor) + offsetWidth, (obstacle.getY() * scaleFactor) + offsetHeight, scaleFactor, scaleFactor);
+
+        for (Map.Entry<Coordinate, GameElement> entry : this.currentLevel.getElements().entrySet()) {
+            Coordinate coordinate = entry.getKey();
+            GameElement obstacle = entry.getValue();
+            g2.setColor(obstacle.getColor());
+            g2.setStroke(new BasicStroke(1F));
+            switch(obstacle.getType()) {
+                case WALL:
+                    g2.fillRect((coordinate.getX() * scaleFactor) + offsetWidth, (coordinate.getY() * scaleFactor) + offsetHeight, scaleFactor, scaleFactor);
+                    break;
+                case TELEPORTER:
+                    g2.setStroke(new BasicStroke(scaleFactor/5F));
+                    g2.drawOval((coordinate.getX() * scaleFactor) + offsetWidth, (coordinate.getY() * scaleFactor) + offsetHeight, scaleFactor, scaleFactor);
+                    break;
+
+            }
         }
 
 //        g2.setColor(new Color(255, 255-(((int)(128*(foodCount/(double)FOOD_GOAL)))), 0, 255)); //Gotta be careful here, at last level theres more than goal counts
         g2.setColor(Color.YELLOW);
-        g2.fillOval((foodLocation.getX()*scaleFactor)+offsetWidth, (foodLocation.getY()*scaleFactor)+offsetHeight, scaleFactor, scaleFactor);
+        g2.fillOval((foodLocation.getX() * scaleFactor) + offsetWidth, (foodLocation.getY() * scaleFactor) + offsetHeight, scaleFactor, scaleFactor);
 
-        if(dead) {
+        if (dead) {
             g2.setColor(Color.RED);
-            g2.fillRect((head.getX()*scaleFactor)+offsetWidth, (head.getY()*scaleFactor)+offsetHeight, scaleFactor, scaleFactor);
+            g2.fillRect((head.getX() * scaleFactor) + offsetWidth, (head.getY() * scaleFactor) + offsetHeight, scaleFactor, scaleFactor);
         }
 
         return buff;
@@ -370,8 +409,8 @@ class Coordinate {
     private final int y;
 
     Coordinate(int x, int y) {
-        this.x=x;
-        this.y=y;
+        this.x = x;
+        this.y = y;
     }
 
     public int getX() {
@@ -410,17 +449,32 @@ enum Direction {
 class Level {
     private int width;
     private int height;
-    private List<Coordinate> obstacles;
+    private Map<Coordinate, GameElement> elements;
 
-    public Level(int width, int height, List<Coordinate> obstacles) {
+    List<Wall> walls;
+
+    public Level(int width, int height, Map<Coordinate, GameElement> elements) {
         this.width = width;
         this.height = height;
-        this.obstacles = obstacles;
+        this.elements = elements;
+
+        walls = new ArrayList<Wall>();
+        for (Coordinate coord : elements.keySet()) {
+            GameElement thing = elements.get(coord);
+            if (thing.getType() == ElementType.WALL) {
+                walls.add(new Wall(coord.getX(), coord.getY(), thing.getColor()));
+            }
+        }
     }
 
-    public List<Coordinate> getObstacles() {
-        return obstacles;
+    public GameElement getElementAt(Coordinate coordinate) {
+        if(elements.containsKey(coordinate)) {
+            return elements.get(coordinate);
+        } else {
+            return null;
+        }
     }
+
 
     public int getWidth() {
         return width;
@@ -428,5 +482,57 @@ class Level {
 
     public int getHeight() {
         return height;
+    }
+
+    public Map<Coordinate, GameElement> getElements() {
+        return elements;
+    }
+
+    public Collection<Coordinate> getObstructionCoordinates() {
+        return elements.keySet();
+    }
+
+    public List<Coordinate> getMatchingElements(GameElement collidingElement) {
+        ArrayList<Coordinate> matchingElements = new ArrayList<Coordinate>();
+        for(Map.Entry<Coordinate, GameElement> entry: elements.entrySet()) {
+            GameElement element = entry.getValue();
+            if(element.getType() == collidingElement.getType() && element.getColor().equals(collidingElement.getColor())) {
+                matchingElements.add(entry.getKey());
+            }
+        }
+        return matchingElements;
+    }
+}
+
+enum ElementType {
+    WALL,
+    TELEPORTER,
+    DOOR_OPEN,
+    DOOR_CLOSED,
+    DOOR_SWITCH
+}
+
+class Wall {
+    private int x;
+    private int y;
+    private Color color;
+
+    public Wall(int x, int y, Color color) {
+
+        this.x = x;
+        this.y = y;
+        this.color = color;
+    }
+
+    public int getX() {
+        return x;
+    }
+
+    public int getY() {
+        return y;
+    }
+
+    public Color getColor() {
+        return color;
     }
 }

@@ -1,39 +1,39 @@
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+X                   X                                      X                   X
+X                   X                                      X                   X
+X                   X         2                  1         X                   X
+X                   X                                      X                   X
+X                   X                                      X                   X
+X                   X                                      X                   X
+X                   X                                      X                   X
+X                   X                                      X                   X
+X                   X                                      X                   X
+X                   X                                      X                   X
+X                   X                                      X                   X
+X                   X                                      X                   X
+X                   X                                      X                   X
+X                   X                                      X                   X
+X                   X                                      X                   X
+X                   X                                      X                   X
+X         1         X                                      X         2         X
+X                   X                                      X                   X
+XXXXXXXXXXXXXXXXXXXXX                                      XXXXXXXXXXXXXXXXXXXXX
 X                                                                              X
 X                                                                              X
 X                                                                              X
-X                                                          1                   X
-X                                                                              X
-X             B                                                                X
-X                                                                              X
-X                                                                              X
-X                              XXXXXXXX                                 W      X
-X                              X2    1X                                        X
-X                              XXXXXXXX                        AAAAAAAAA       X
-X                                                                              X
-X                                                                              X
-X               XXXXXXXXXXX                                                    X
-X               X3       2X               B             aaaaaaaaa              X
-X          P    XXXXXXXXXXX                                                    X
 X                                                                              X
 X                                                                              X
 X                                                                              X
 X                                                                              X
 X                                                                              X
-X                                      ä                     Ä                 X
-X                                                                              X
-X                                                 B                            X
 X                                                                              X
 X                                                                              X
 X                                                                              X
-X                                                                 G            X
-X                   B                                             G            X
-X                                                                 G            X
-XWWWWWWWWWWWXWWWWWWWWWWWXWWWWWWWWWWWXWWWWWWWWWWWXWWWWWWWWWWWXWWWWWWWWWWWXWWWWWWW
 X                                                                              X
 X                                                                              X
 X                                                                              X
-X                                                                     3        X
+X                                                                              X
+X                                                                              X
 X                                                                              X
 X                                                                              X
 X                                                                              X
