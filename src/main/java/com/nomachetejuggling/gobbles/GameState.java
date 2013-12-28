@@ -8,8 +8,6 @@ import java.util.*;
 import java.util.List;
 
 //TODO: BUGS:
-//      * weirdness with teleporters.  On current 0_basic test map, going into cyan from right side, the collision is in the wrong place (outside the box)
-//      * teleporter handling is weird.  removing the head of the snake and making a new one?  seems too late, like an ordering issue
 
 //TODO: Map enhancements:
 //      * Switches/Doors
@@ -157,12 +155,15 @@ public class GameState {
 
             moveSnakeRelativeTo(head);
 
+            head = snake.get(snake.size() - 1);
+
             //check for collisions with snake, world, or tokens
             boolean hasCollided = hasCollided();
 
             if(hasCollided) {
                 dead = true;
             }
+
 
             GameElement collidingElement = currentLevel.getElementAt(head);
 
@@ -174,16 +175,23 @@ public class GameState {
                         break;
                     case TELEPORTER:
                         List<Coordinate> teleporters = currentLevel.getMatchingElements(collidingElement);
-                        snake.remove(snake.size()-1);
+                        //snake.remove(snake.size()-1);
                         teleporters.remove(head);
                         Coordinate teleportLocation = teleporters.get(rng.nextInt(teleporters.size()));
                         moveSnakeRelativeTo(teleportLocation);
-                        //Need to recheck for collisions here.  Code smell.
+                        head = snake.get(snake.size() - 1);
                         break;
                     default:
                         break;
                 }
             }
+
+//            //check for collisions with snake, world, or tokens
+//            boolean hasCollided = hasCollided();
+//
+//            if(hasCollided) {
+//                dead = true;
+//            }
 
             if (head.equals(foodLocation)) {
                 foodLocation = placeObject();
