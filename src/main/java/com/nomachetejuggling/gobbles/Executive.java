@@ -91,6 +91,10 @@ class MapReader {
         put('2', new GameElement(ElementType.TELEPORTER, new Color(0, 255, 0))); //Green
         put('3', new GameElement(ElementType.TELEPORTER, new Color(48, 255, 255))); //Cyan
         put('4', new GameElement(ElementType.TELEPORTER, new Color(255, 63, 63))); //Red
+        put('5', new GameElement(ElementType.TELEPORTER, new Color(255, 63, 255))); //Red
+        put('a', new GameElement(ElementType.DOOR_OPEN, new Color(255, 162, 0)));
+        put('A', new GameElement(ElementType.DOOR_CLOSED, new Color(255, 162, 0)));
+        put('ä', new GameElement(ElementType.DOOR_SWITCH, new Color(255, 162, 0)));
     }};
 
     public MapReader() {

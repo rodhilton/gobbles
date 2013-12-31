@@ -8,9 +8,11 @@ import java.util.*;
 import java.util.List;
 
 //TODO: BUGS:
+//      * one tick adds two snake points when going through teleporter.  first should be in, next tick out.  or should it? what happens if you press a direction?  seems like you should come out of the teleporter in that dir
 
 //TODO: Map enhancements:
 //      * Switches/Doors
+//         * do we need to check for collisions on every part of snake, not just head?  because if you are ON an open door and close it, shouldnt it kill you?  maybe it should cut you in half but leave you alive, but leave the remains of your body there forever? wormesque.
 //      * Full GUI editor for text files
 //      * Map selection argument or cheat key
 
@@ -153,7 +155,23 @@ public class GameState {
         if (!isPaused()) {
             Coordinate head = snake.get(snake.size() - 1);
 
-            moveSnakeRelativeTo(head);
+            GameElement currentCollidingElement = currentLevel.getElementAt(head);
+
+            //We have to do a check for 'current' to see if it affects the move, and then later do a check to see if its a reaction to the new move itself
+            //Seems like we should only have to check the once
+
+            if(currentCollidingElement != null && currentCollidingElement.getType() == ElementType.TELEPORTER) {
+                List<Coordinate> teleporters = currentLevel.getMatchingElements(currentCollidingElement);
+                teleporters.removeAll(snake);
+                if(teleporters.size()==0) {
+                    moveSnakeRelativeTo(head);
+                } else {
+                    Coordinate teleportLocation = teleporters.get(rng.nextInt(teleporters.size()));
+                    snake.add(teleportLocation);
+                }
+            } else {
+                moveSnakeRelativeTo(head);
+            }
 
             head = snake.get(snake.size() - 1);
 
@@ -164,23 +182,21 @@ public class GameState {
                 dead = true;
             }
 
+            GameElement newCollidingElement = currentLevel.getElementAt(head);
 
-            GameElement collidingElement = currentLevel.getElementAt(head);
+            if(newCollidingElement != null) {
 
-            if(collidingElement != null) {
-
-                switch(collidingElement.getType()) {
+                switch(newCollidingElement.getType()) {
                     case WALL:
                         dead = true;
                         break;
-                    case TELEPORTER:
-                        List<Coordinate> teleporters = currentLevel.getMatchingElements(collidingElement);
-                        //snake.remove(snake.size()-1);
-                        teleporters.remove(head);
-                        Coordinate teleportLocation = teleporters.get(rng.nextInt(teleporters.size()));
-                        moveSnakeRelativeTo(teleportLocation);
-                        head = snake.get(snake.size() - 1);
-                        break;
+//                    case TELEPORTER:
+//                        List<Coordinate> teleporters = currentLevel.getMatchingElements(collidingElement);
+//                        teleporters.remove(head);
+//                        Coordinate teleportLocation = teleporters.get(rng.nextInt(teleporters.size()));
+//                        snake.add(teleportLocation);
+//                        head = snake.get(snake.size() - 1);
+//                        break;
                     default:
                         break;
                 }
