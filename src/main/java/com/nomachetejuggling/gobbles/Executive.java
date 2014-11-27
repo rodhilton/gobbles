@@ -87,6 +87,16 @@ class MapReader {
         put('X', new GameElement(ElementType.WALL, new Color(0, 7, 152))); //Dark Blue
         put('P', new GameElement(ElementType.WALL, new Color(136, 0, 152))); //Dark Purple
         put('G', new GameElement(ElementType.WALL, new Color(4, 152, 0))); //Dark Green
+        put('+', new GameElement(ElementType.WALL, new Color(120, 152, 150)));
+        put('-', new GameElement(ElementType.WALL, new Color(140, 102, 150)));
+        put('|', new GameElement(ElementType.WALL, new Color(120, 112, 150)));
+        put('`', new GameElement(ElementType.WALL, new Color(120, 102, 150)));
+        put('\'', new GameElement(ElementType.WALL, new Color(140, 102, 150)));
+        put('.', new GameElement(ElementType.WALL, new Color(180, 123, 150)));
+        put(',', new GameElement(ElementType.WALL, new Color(110, 98, 150)));
+        put('/', new GameElement(ElementType.WALL, new Color(130, 98, 150)));
+        put('_', new GameElement(ElementType.WALL, new Color(120, 151, 150)));
+        put('\\', new GameElement(ElementType.WALL, new Color(110, 158, 150)));
         put('1', new GameElement(ElementType.TELEPORTER, new Color(255, 162, 0))); //Orange
         put('2', new GameElement(ElementType.TELEPORTER, new Color(0, 255, 0))); //Green
         put('3', new GameElement(ElementType.TELEPORTER, new Color(48, 255, 255))); //Cyan
