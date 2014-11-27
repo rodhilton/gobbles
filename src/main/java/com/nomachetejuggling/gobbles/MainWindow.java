@@ -77,12 +77,16 @@ class GamePanel extends JPanel implements Listener<GameState> {
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
 
-        int width = this.getWidth();
-        int height = this.getHeight();
+        int rezFactor = 1;
+
+        int width = this.getWidth() / rezFactor;
+        int height = this.getHeight() / rezFactor;
 
         BufferedImage buff = grid.renderGame(width, height);
 
-        g.drawImage(buff, 0, 0, null);
+        Image scaledImage = buff.getScaledInstance(width * rezFactor, height*rezFactor, Image.SCALE_FAST);
+
+        g.drawImage(scaledImage, 0, 0, null);
     }
 
     @Override

@@ -1,22 +1,21 @@
-package com.nomachetejuggling.gobbles
+package com.nomachetejuggling.gobbles;
 
-import java.awt.Color
+import java.awt.*;
 
-
-class GameElement {
+public class GameElement {
     private ElementType type;
     private Color color;
 
     public GameElement(ElementType type, Color color) {
-        this.type = type
-        this.color = color
+        this.type = type;
+        this.color = color;
     }
 
     public Color getColor() {
-        return color
+        return color;
     }
 
     public ElementType getType() {
-        return type
+        return type;
     }
 }

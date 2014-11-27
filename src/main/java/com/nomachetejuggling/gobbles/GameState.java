@@ -186,20 +186,23 @@ public class GameState {
 
             if(newCollidingElement != null) {
 
-                switch(newCollidingElement.getType()) {
-                    case WALL:
-                        dead = true;
-                        break;
-//                    case TELEPORTER:
-//                        List<Coordinate> teleporters = currentLevel.getMatchingElements(collidingElement);
-//                        teleporters.remove(head);
-//                        Coordinate teleportLocation = teleporters.get(rng.nextInt(teleporters.size()));
-//                        snake.add(teleportLocation);
-//                        head = snake.get(snake.size() - 1);
-//                        break;
-                    default:
-                        break;
+                if(newCollidingElement.getType() == ElementType.WALL) {
+                    dead = true;
                 }
+//                switch(newCollidingElement.getType()) {
+//                    case WALL:
+//                        dead = true;
+//                        break;
+////                    case TELEPORTER:
+////                        List<Coordinate> teleporters = currentLevel.getMatchingElements(collidingElement);
+////                        teleporters.remove(head);
+////                        Coordinate teleportLocation = teleporters.get(rng.nextInt(teleporters.size()));
+////                        snake.add(teleportLocation);
+////                        head = snake.get(snake.size() - 1);
+////                        break;
+//                    default:
+//                        break;
+//                }
             }
 
 //            //check for collisions with snake, world, or tokens
