@@ -54,7 +54,7 @@ import java.util.List;
 
 public class GameState {
     private static final int SNAKE_START_LENGTH = 10;
-    private static final int SNAKE_MULTIPLIER = 7;
+    private static final int SNAKE_MULTIPLIER = 10;
     private static final int FOOD_GOAL = 10;
     private static final int DEFAULT_LIVES = 3;
 
@@ -217,7 +217,6 @@ public class GameState {
                 foodCount++;
                 snakeLength = (SNAKE_MULTIPLIER * foodCount) + SNAKE_START_LENGTH;
                 points = points + 10000;
-                System.out.println("Score: " + foodCount);
                 if (foodCount >= FOOD_GOAL && !lastLevel()) {
                     //If accomplished goal and not on last level (which goes on forever):
                     this.paused = true;
@@ -420,10 +419,14 @@ public class GameState {
 //        g2.setColor(new Color(255, 255-(((int)(128*(foodCount/(double)FOOD_GOAL)))), 0, 255)); //Gotta be careful here, at last level theres more than goal counts
         g2.setColor(Color.YELLOW);
         g2.fillOval((foodLocation.getX() * scaleFactor) + offsetWidth, (foodLocation.getY() * scaleFactor) + offsetHeight, scaleFactor, scaleFactor);
-        if(!lastLevel()) {
-            String label = ""+(FOOD_GOAL - foodCount);
+        //if(!lastLevel()) {
+        if(foodCount + 1 < 100) {
+            String label = ""+(foodCount+1);
+            if(foodCount + 1 == FOOD_GOAL && !lastLevel()) {
+                label = "!";
+            }
             g2.setColor(Color.BLACK);
-            g2.setFont(new Font("SansSerif", Font.PLAIN, (int)(scaleFactor*.7)));
+            g2.setFont(new Font("SansSerif", Font.BOLD, (int)(scaleFactor*.7)));
             FontMetrics fm = g2.getFontMetrics(g2.getFont());
             int x = ((scaleFactor - fm.stringWidth(label)) / 2);
             int y = ((scaleFactor - fm.getHeight()) / 2) + fm.getAscent();
