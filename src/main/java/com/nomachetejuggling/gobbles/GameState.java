@@ -218,7 +218,7 @@ public class GameState {
                 snakeLength = (SNAKE_MULTIPLIER * foodCount) + SNAKE_START_LENGTH;
                 points = points + 10000;
                 System.out.println("Score: " + foodCount);
-                if (foodCount >= FOOD_GOAL && currentLevelIndex != levels.size() - 1) {
+                if (foodCount >= FOOD_GOAL && !lastLevel()) {
                     //If accomplished goal and not on last level (which goes on forever):
                     this.paused = true;
                     this.currentLevelIndex++;
@@ -233,6 +233,10 @@ public class GameState {
                 snake.remove(0);
             }
         }
+    }
+
+    private boolean lastLevel() {
+        return currentLevelIndex == levels.size() - 1;
     }
 
     private void moveSnakeRelativeTo(Coordinate head) {
@@ -416,6 +420,16 @@ public class GameState {
 //        g2.setColor(new Color(255, 255-(((int)(128*(foodCount/(double)FOOD_GOAL)))), 0, 255)); //Gotta be careful here, at last level theres more than goal counts
         g2.setColor(Color.YELLOW);
         g2.fillOval((foodLocation.getX() * scaleFactor) + offsetWidth, (foodLocation.getY() * scaleFactor) + offsetHeight, scaleFactor, scaleFactor);
+        if(!lastLevel()) {
+            String label = ""+(FOOD_GOAL - foodCount);
+            g2.setColor(Color.BLACK);
+            g2.setFont(new Font("SansSerif", Font.PLAIN, (int)(scaleFactor*.7)));
+            FontMetrics fm = g2.getFontMetrics(g2.getFont());
+            int x = ((scaleFactor - fm.stringWidth(label)) / 2);
+            int y = ((scaleFactor - fm.getHeight()) / 2) + fm.getAscent();
+
+            g2.drawString(label, (foodLocation.getX() * scaleFactor) + offsetWidth + x, (foodLocation.getY() * scaleFactor) + offsetHeight + y);
+        }
 
         if (dead) {
             g2.setColor(Color.RED);
