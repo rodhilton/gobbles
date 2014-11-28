@@ -31,12 +31,12 @@ public class MainWindow extends JFrame implements KeyListener {
 
         this.getContentPane().add(panel, BorderLayout.CENTER);
 
-        hudPanel = new HudPanel(state);
-        hudPanel.setPreferredSize(new Dimension(40, 40));
+        //hudPanel = new HudPanel(state);
+        //hudPanel.setPreferredSize(new Dimension(40, 40));
 
-        this.getContentPane().add(hudPanel, BorderLayout.NORTH);
+        //this.getContentPane().add(hudPanel, BorderLayout.NORTH);
 
-        this.setSize(452, 522);
+        //this.setSize(452, 522);
 
         this.setVisible(true);
         this.addKeyListener(this);

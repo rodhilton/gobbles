@@ -182,6 +182,8 @@ public class GameState {
                 dead = true;
             }
 
+
+
             GameElement newCollidingElement = currentLevel.getElementAt(head);
 
             if(newCollidingElement != null) {
@@ -434,10 +436,34 @@ public class GameState {
             g2.drawString(label, (foodLocation.getX() * scaleFactor) + offsetWidth + x, (foodLocation.getY() * scaleFactor) + offsetHeight + y);
         }
 
+        if (paused) {
+            String pausedLabel="Paused";
+            g2.setColor(Color.WHITE);
+            g2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, scaleFactor * 2));
+            FontMetrics fm = g2.getFontMetrics(g2.getFont());
+            int x = ((width - fm.stringWidth(pausedLabel)) / 2);
+            int y = ((height - fm.getHeight()) / 2) + fm.getAscent();
+            g2.drawString(pausedLabel, x, y);
+        }
+
         if (dead) {
             g2.setColor(Color.RED);
+
+            String deadLabel = "Dead!";
+            g2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, scaleFactor * 3));
+            if (lives == 0) {
+                deadLabel = "GAME OVER";
+                g2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, scaleFactor * 4));
+            }
+            FontMetrics fm = g2.getFontMetrics(g2.getFont());
+            int x = ((width - fm.stringWidth(deadLabel)) / 2);
+            int y = ((height - fm.getHeight()) / 2) + fm.getAscent();
+            g2.drawString(deadLabel, x, y);
+
             g2.fillRect((head.getX() * scaleFactor) + offsetWidth, (head.getY() * scaleFactor) + offsetHeight, scaleFactor, scaleFactor);
         }
+
+
 
         return buff;
     }
