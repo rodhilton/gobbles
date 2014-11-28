@@ -1,9 +1,15 @@
 package com.nomachetejuggling.gobbles;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
+import sun.security.util.BigInt;
+
+import javax.annotation.Nullable;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
+import java.math.BigInteger;
 import java.util.*;
 import java.util.List;
 
@@ -18,10 +24,8 @@ import java.util.List;
 
 //TODO: Powerup System:
 //      * Points in HUD
-//      * Random coins in game (not food, they disappear after a few cycles, maybe 50) earn points
-//      * X points puts a powerup on board, disappears after a few cycles, maybe moves around)
 //      * Powerups:
-//           extra life
+//           ----extra life
 //           auto reverse if about to die
 //           auto pause if about to die
 //           auto turn if about to crash
@@ -56,7 +60,10 @@ public class GameState {
     private static final int SNAKE_START_LENGTH = 10;
     private static final int SNAKE_MULTIPLIER = 10;
     private static final int FOOD_GOAL = 10;
-    private static final int DEFAULT_LIVES = 3;
+    private static final int DEFAULT_LIVES = 4;
+    private static final int COIN_REWARD = 10;
+    private static final int MAX_LIVES = 10;
+    private static final double COIN_CHANCE = 0.50; //Chance of eating creating a coin
 
     private int currentLevelIndex;
     private Level currentLevel;
@@ -66,19 +73,24 @@ public class GameState {
     private int snakeLength;
 
     private int foodCount;
+    private int coinCount;
 
     private Coordinate foodLocation;
+    private Coordinate coinLocation=null;
+    private Coordinate extraLifeLocation=null;
+
     private boolean dead;
-
     private boolean paused;
+
     private int points;
-
     private int lives;
-    private List<Level> levels = new ArrayList<Level>();
 
+    private List<Level> levels = new ArrayList<Level>();
     private ArrayList<Coordinate> validSquares;
     private Random rng;
     ArrayList<Listener<GameState>> listeners;
+
+    private long frameCounter;
 
     public GameState(List<Level> levels) {
         this.rng = new Random();
@@ -93,6 +105,7 @@ public class GameState {
         this.points = 0;
         this.lives = DEFAULT_LIVES;
         this.dead = false;
+        this.coinCount = 0;
         initLevel(currentLevelIndex);
     }
 
@@ -118,7 +131,7 @@ public class GameState {
         this.direction = Direction.NONE;
         this.paused = true;
         this.foodLocation = placeObject();
-
+        this.frameCounter = 0L;
         this.foodCount = 0;
     }
 
@@ -126,6 +139,9 @@ public class GameState {
         ArrayList<Coordinate> trulyValid = new ArrayList<Coordinate>();
         trulyValid.addAll(validSquares);
         trulyValid.removeAll(snake);
+        trulyValid.remove(foodLocation);
+        trulyValid.remove(coinLocation);
+        trulyValid.remove(extraLifeLocation);
         return trulyValid.get(rng.nextInt(trulyValid.size()));
     }
 
@@ -153,6 +169,8 @@ public class GameState {
 
     private void updateState(GameInput gameInput) {
         if (!isPaused()) {
+            frameCounter++;
+
             Coordinate head = snake.get(snake.size() - 1);
 
             GameElement currentCollidingElement = currentLevel.getElementAt(head);
@@ -181,8 +199,6 @@ public class GameState {
             if(hasCollided) {
                 dead = true;
             }
-
-
 
             GameElement newCollidingElement = currentLevel.getElementAt(head);
 
@@ -214,6 +230,20 @@ public class GameState {
 //                dead = true;
 //            }
 
+            if (head.equals(coinLocation)) {
+                coinCount++;
+                coinLocation = null;
+                if(coinCount == COIN_REWARD) {
+                    coinCount = 0;
+                    extraLifeLocation = placeObject();
+                }
+            }
+
+            if(head.equals(extraLifeLocation)) {
+                lives = Math.max(lives+1, MAX_LIVES);
+                extraLifeLocation = null;
+            }
+
             if (head.equals(foodLocation)) {
                 foodLocation = placeObject();
                 foodCount++;
@@ -225,6 +255,12 @@ public class GameState {
                     this.currentLevelIndex++;
                     gameInput.clear();
                     initLevel(currentLevelIndex);
+                } else {
+                    if(!hasCoin()) {
+                        if(rng.nextDouble() < COIN_CHANCE) {
+                            addCoin(placeObject());
+                        }
+                    }
                 }
             } else {
 //                this.points = Math.max(points - 10, 0);
@@ -234,6 +270,14 @@ public class GameState {
                 snake.remove(0);
             }
         }
+    }
+
+    public boolean hasCoin() {
+        return coinLocation != null;
+    }
+
+    public void addCoin(Coordinate coordinate) {
+        coinLocation = coordinate;
     }
 
     private boolean lastLevel() {
@@ -414,8 +458,59 @@ public class GameState {
                     g2.setStroke(new BasicStroke(scaleFactor/5F));
                     g2.drawOval((coordinate.getX() * scaleFactor) + offsetWidth, (coordinate.getY() * scaleFactor) + offsetHeight, scaleFactor, scaleFactor);
                     break;
-
             }
+        }
+
+        if(coinLocation != null) {
+            g2.setColor(new Color(255, 205, 64));
+            int borderSize = scaleFactor / 4;
+            int animationFrames = 8;
+            int coinWidth = scaleFactor - borderSize;
+
+            int animationCount = (int)(frameCounter % animationFrames);
+//            int frontBackCount = (int)(frameCounter % (animationFrames * 2));
+            int halfFrame = animationFrames / 2;
+
+            int spinAmt = 0;
+
+            if(animationCount >= halfFrame) { //back, expanding
+                spinAmt = animationFrames - animationCount;
+            } else {
+                spinAmt = animationCount;
+            }
+
+//            if(Math.abs(frontBackCount - animationCount) > animationFrames) {
+//                //g2.setColor(new Color(178, 124, 40));
+//                g2.setColor(Color.PINK);
+//            } else {
+//                g2.setColor(new Color(255, 205, 64));
+//            }
+
+            double percent = spinAmt / (double)halfFrame;
+            System.out.println(coinWidth);
+            int sideBorder = Math.min(coinWidth/2 - 4, (int)(percent * (coinWidth/2)));
+            //System.out.println(sideBorder);
+
+
+            g2.fillOval((coinLocation.getX() * scaleFactor) + offsetWidth + sideBorder + borderSize, (coinLocation.getY() * scaleFactor) + offsetHeight + borderSize, scaleFactor - borderSize * 2 - sideBorder * 2, scaleFactor - borderSize * 2);
+        }
+
+        if(extraLifeLocation != null) {
+            g2.setColor(new Color(64, 255, 64));
+            int animationFrames = (scaleFactor / 4)*2;
+
+            int animationCount = (int)(frameCounter % animationFrames);
+            int halfFrame = animationFrames / 2;
+
+            int borderSize = 0;
+
+            if(animationCount > halfFrame) { //back, expanding
+                borderSize = animationFrames - animationCount;
+            } else {
+                borderSize = animationCount;
+            }
+
+            g2.fillOval((extraLifeLocation.getX() * scaleFactor) + offsetWidth + borderSize, (extraLifeLocation.getY() * scaleFactor) + offsetHeight + borderSize, scaleFactor - borderSize * 2, scaleFactor - borderSize * 2);
         }
 
 //        g2.setColor(new Color(255, 255-(((int)(128*(foodCount/(double)FOOD_GOAL)))), 0, 255)); //Gotta be careful here, at last level theres more than goal counts
@@ -579,7 +674,8 @@ enum ElementType {
     TELEPORTER,
     DOOR_OPEN,
     DOOR_CLOSED,
-    DOOR_SWITCH
+    DOOR_SWITCH,
+    COIN
 }
 
 class Wall {
