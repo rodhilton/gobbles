@@ -487,7 +487,6 @@ public class GameState {
 //            }
 
             double percent = spinAmt / (double)halfFrame;
-            System.out.println(coinWidth);
             int sideBorder = Math.min(coinWidth/2 - 4, (int)(percent * (coinWidth/2)));
             //System.out.println(sideBorder);
 
